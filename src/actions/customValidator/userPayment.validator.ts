@@ -1,0 +1,18 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
+import {
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+} from 'class-validator';
+
+@ValidatorConstraint({ name: 'isValidUserAccountNumber' })
+export class isValidUserAccountNumber implements ValidatorConstraintInterface {
+  validate(value: string): boolean | Promise<boolean> {
+    if (value.charAt(0) === '0') {
+      return true;
+    }
+    return false;
+  }
+  defaultMessage?(): string {
+    throw new HttpException('Invalid account number', HttpStatus.BAD_REQUEST);
+  }
+}

@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["interactiveTransactions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+model UserPayment {
+  accountNumber  String    @id @unique @db.Char(10)
+  accountID      String    @unique
+  amountLimit    Float     @default(1000000)
+  refNumber      String    @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  balanced       Float     @default(0)
+  isAllowPayment Boolean   @default(true)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  deleted_at     DateTime?
+
+  @@unique(fields: [accountID, accountNumber, isAllowPayment], name: "isCorrectPaymentAccount")
+  @@unique(fields: [accountID, isAllowPayment], name: "isReadyForGetQRPayload")
+  @@unique(fields: [accountNumber, isAllowPayment], name: "readyForPayment")
+}
+
+model ShopPayment {
+  accountNumber  String          @id @unique @db.Char(10)
+  shopID         String          @unique
+  amountLimit    Float           @default(2000000)
+  refNumber      String          @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  balanced       Float           @default(0)
+  isAllowPayment Boolean         @default(true)
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+  deleted_at     DateTime?
+  QRShopPayment  QRShopPayment[]
+
+  @@unique([accountNumber, shopID])
+}
+
+model QRShopPayment {
+  QRRef         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountNumber String      @db.Char(10)
+  expiredTime   DateTime
+  amount        Float
+  isPaid        Boolean     @default(false)
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+  deleted_at    DateTime?
+  ShopPayment   ShopPayment @relation(fields: [accountNumber], references: [accountNumber])
+}
