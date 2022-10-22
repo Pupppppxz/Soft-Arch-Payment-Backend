@@ -31,9 +31,8 @@ import { GetQRPayload } from './dto/getQRPayload.dto';
 export class UserPaymentService {
   constructor(private prisma: PrismaService) {}
 
-  async createPayment(createUserPaymentDto: CreateUserPaymentDto) {
-    const accountNumber: string = GenerateAccountNumber.GetAccountNumber();
-    let numberExist = true;
+  async createAccount(createUserPaymentDto: CreateUserPaymentDto) {
+    let accountNumber: string = GenerateAccountNumber.GetUserAccountNumber();
 
     // check account exist
     const accountExist = await this.prisma.userPayment.findUnique({
@@ -46,15 +45,16 @@ export class UserPaymentService {
     }
 
     // check account number exist
-    while (numberExist) {
+    while (true) {
       const accountExist = await this.prisma.userPayment.findUnique({
         where: {
-          accountID: createUserPaymentDto.accountID,
+          accountNumber: accountNumber,
         },
       });
       if (!accountExist) {
-        numberExist = false;
+        break;
       }
+      accountNumber = GenerateAccountNumber.GetUserAccountNumber();
     }
 
     const userPayment: Prisma.UserPaymentCreateInput =

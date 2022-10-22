@@ -20,7 +20,7 @@ export class UserPaymentController {
 
   @Post('create')
   createPayment(@Body() createUserPaymentDto: CreateUserPaymentDto) {
-    return this.userPaymentService.createPayment(createUserPaymentDto);
+    return this.userPaymentService.createAccount(createUserPaymentDto);
   }
 
   @Get('info/:id')

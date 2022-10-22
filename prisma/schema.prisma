@@ -39,6 +39,7 @@ model ShopPayment {
   deleted_at     DateTime?
   QRShopPayment  QRShopPayment[]
 
+@@unique(fields: [accountNumber, isAllowPayment], name: "isShopReadyForPayment")
   @@unique([accountNumber, shopID])
 }
 
