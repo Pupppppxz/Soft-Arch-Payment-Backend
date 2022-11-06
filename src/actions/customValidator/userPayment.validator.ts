@@ -7,6 +7,7 @@ import {
 @ValidatorConstraint({ name: 'isValidUserAccountNumber' })
 export class isValidUserAccountNumber implements ValidatorConstraintInterface {
   validate(value: string): boolean | Promise<boolean> {
+    if (!value) return false;
     if (value.charAt(0) === '0') {
       return true;
     }

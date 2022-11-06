@@ -26,6 +26,7 @@ import { CreateUserPaymentDto } from './dto/createUserPayment.dto';
 import { SetAmountLimitPerDay } from './dto/setAmountLimit.dto';
 import { Transfer } from './dto/transfer';
 import { GetQRPayload } from './dto/getQRPayload.dto';
+import { GenerateTimeStamp } from 'src/helpers/generateTime.helper';
 
 @Injectable()
 export class UserPaymentService {
@@ -70,9 +71,13 @@ export class UserPaymentService {
     }
 
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.CREATED,
-      userPayment,
+      userPayment: {
+        accountNumber: userPayment.accountNumber,
+        balanced: userPayment.balanced,
+        amountLimit: userPayment.amountLimit,
+      },
     };
   }
 
@@ -93,7 +98,7 @@ export class UserPaymentService {
       throw new HttpException(NOT_FOUND_USER, HttpStatus.BAD_REQUEST);
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       userPayment,
     };
@@ -120,7 +125,7 @@ export class UserPaymentService {
       );
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       QRPayload: {
         ...QRPayload,
@@ -142,7 +147,7 @@ export class UserPaymentService {
       throw new HttpException(NOT_FOUND_BALANCED, HttpStatus.BAD_REQUEST);
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       balanced: userPayment.balanced,
     };
@@ -161,7 +166,7 @@ export class UserPaymentService {
       throw new HttpException(NOT_FOUND_AMOUNT_LIMIT, HttpStatus.BAD_REQUEST);
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       amountLimit: userPayment.amountLimit,
     };
@@ -183,7 +188,7 @@ export class UserPaymentService {
       );
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: UPDATE_AMOUNT_LIMIT_COMPLETE,
     };
@@ -205,7 +210,7 @@ export class UserPaymentService {
       );
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: SUCCESS_BLOCK_PAYMENT_METHOD,
     };
@@ -224,7 +229,7 @@ export class UserPaymentService {
       throw new HttpException('', HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: SUCCESS_BLOCK_PAYMENT_METHOD,
     };
@@ -248,7 +253,7 @@ export class UserPaymentService {
     }
 
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       ...isAllow,
     };
@@ -311,7 +316,7 @@ export class UserPaymentService {
     console.log('====================================');
 
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: SUCCESS_TRANSFER_TO_SAME_BANK,
     };
@@ -335,7 +340,7 @@ export class UserPaymentService {
       );
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: DELETE_SUCCESSFULLY,
     };
@@ -357,7 +362,7 @@ export class UserPaymentService {
       );
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: RESTORE_PAYMENT_SUCCESS,
     };

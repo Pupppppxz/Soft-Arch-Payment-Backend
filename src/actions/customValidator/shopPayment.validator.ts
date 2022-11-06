@@ -7,6 +7,7 @@ import {
 @ValidatorConstraint({ name: '' })
 export class isValidShopAccountNumber implements ValidatorConstraintInterface {
   validate(value: string): boolean | Promise<boolean> {
+    if (!value) return false;
     if (value.charAt(0) === '5') {
       return true;
     }

@@ -39,7 +39,7 @@ model ShopPayment {
   deleted_at     DateTime?
   QRShopPayment  QRShopPayment[]
 
-@@unique(fields: [accountNumber, isAllowPayment], name: "isShopReadyForPayment")
+  @@unique(fields: [accountNumber, isAllowPayment], name: "isShopReadyForPayment")
   @@unique([accountNumber, shopID])
 }
 
@@ -48,6 +48,7 @@ model QRShopPayment {
   accountNumber String      @db.Char(10)
   expiredTime   DateTime
   amount        Float
+  qrURL         String?
   isPaid        Boolean     @default(false)
   created_at    DateTime    @default(now())
   updated_at    DateTime    @updatedAt

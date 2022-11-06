@@ -25,6 +25,7 @@ import {
   SUCCESS_TRANSFER_TO_SAME_BANK,
 } from 'src/assets/httpMessage/userPayment.label';
 import { ShopTransfer } from './dto/shopTransfer.dto';
+import { GenerateTimeStamp } from 'src/helpers/generateTime.helper';
 
 @Injectable()
 export class ShopPaymentService {
@@ -71,9 +72,13 @@ export class ShopPaymentService {
     }
 
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.CREATED,
-      shopPayment,
+      shopPayment: {
+        accountNumber: shopPayment.accountNumber,
+        balanced: shopPayment.balanced,
+        amountLimit: shopPayment.amountLimit,
+      },
     };
   }
 
@@ -115,7 +120,7 @@ export class ShopPaymentService {
     }
 
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       ...balanced,
     };
@@ -136,7 +141,7 @@ export class ShopPaymentService {
     }
 
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       ...amountLimit,
     };
@@ -157,7 +162,7 @@ export class ShopPaymentService {
     }
 
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: UPDATE_AMOUNT_LIMIT_FINISH,
     };
@@ -179,7 +184,7 @@ export class ShopPaymentService {
       );
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: SUCCESS_BLOCK_PAYMENT_METHOD,
     };
@@ -198,7 +203,7 @@ export class ShopPaymentService {
       throw new HttpException('', HttpStatus.INTERNAL_SERVER_ERROR);
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: SUCCESS_BLOCK_PAYMENT_METHOD,
     };
@@ -222,7 +227,7 @@ export class ShopPaymentService {
     }
 
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       ...isAllow,
     };
@@ -285,7 +290,7 @@ export class ShopPaymentService {
     console.log('====================================');
 
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: SUCCESS_TRANSFER_TO_SAME_BANK,
     };
@@ -307,7 +312,7 @@ export class ShopPaymentService {
       );
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: DELETE_SUCCESSFULLY,
     };
@@ -329,7 +334,7 @@ export class ShopPaymentService {
       );
     }
     return {
-      timestamp: new Date().toUTCString(),
+      timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
       message: RESTORE_PAYMENT_SUCCESS,
     };

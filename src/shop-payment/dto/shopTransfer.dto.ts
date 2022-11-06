@@ -5,7 +5,6 @@ import {
   IsNumber,
   IsNumberString,
   IsString,
-  IsUUID,
   Length,
   Max,
   Min,
@@ -15,11 +14,6 @@ import { isValidShopAccountNumber } from 'src/actions/customValidator/shopPaymen
 import { BANK_NAME, TRANSFER_TYPE } from 'src/assets/paymentStatic/payment';
 
 export class ShopTransfer {
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsUUID()
-  RefNumber: string;
-
   @ApiProperty()
   @IsNotEmpty()
   @Length(10, 10)

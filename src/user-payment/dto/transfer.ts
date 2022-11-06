@@ -5,7 +5,6 @@ import {
   IsNumber,
   IsNumberString,
   IsString,
-  IsUUID,
   Length,
   Max,
   Min,
@@ -15,11 +14,6 @@ import { isValidUserAccountNumber } from 'src/actions/customValidator/userPaymen
 import { BANK_NAME, TRANSFER_TYPE } from 'src/assets/paymentStatic/payment';
 
 export class Transfer {
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsUUID()
-  RefNumber: string;
-
   @ApiProperty()
   @IsNotEmpty()
   @IsNumberString()
