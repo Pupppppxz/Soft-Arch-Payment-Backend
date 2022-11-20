@@ -1,9 +1,11 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import {
   CREATE_SHOP_FAIL,
   GET_BALANCED_FAIL,
   NOT_FOUND_SHOP,
   SHOP_ALREADY_EXIST,
+  TRANSFER_MONEY_FAIL,
+  TRANSFER_NOT_ACCEPT,
   UPDATE_AMOUNT_LIMIT_FAIL,
   UPDATE_AMOUNT_LIMIT_FINISH,
 } from 'src/assets/httpMessage/shopPayment.label';
@@ -14,6 +16,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { SetShopAmountLimitPerDayDTO } from './dto/setShopAmountLimitPerDay.dto';
 import {
   BLOCK_PAYMENT_FAIL,
+  CREATE_TRANSACTION_FAIL,
   DELETE_SUCCESSFULLY,
   DOES_NOT_HAVE_ENOUGH_MONEY,
   ERROR_WHILE_DELETE,
@@ -26,10 +29,100 @@ import {
 } from 'src/assets/httpMessage/userPayment.label';
 import { ShopTransfer } from './dto/shopTransfer.dto';
 import { GenerateTimeStamp } from 'src/helpers/generateTime.helper';
+import { HttpService } from '@nestjs/axios/dist';
+import { ShopTransactionBody, UserTransactionBody } from 'src/types';
+import { ShopNotifiedHelper } from 'src/helpers/shopNotified.helper';
+import { UserNotified } from 'src/helpers/userNotified.helper';
+import { forwardRef } from '@nestjs/common/utils';
+import { UserPaymentService } from 'src/user-payment/user-payment.service';
+import {
+  ACCOUNT_TYPE,
+  BANK_NAME,
+  TRANSFER_STATUS,
+  TRANSFER_TYPE,
+} from 'src/assets/paymentStatic/payment';
+import { TransactionFactory } from 'src/services/transactions/transactionFactory';
+import { NotifiedFactory } from 'src/services/notifieds/notifiedFactory';
 
 @Injectable()
 export class ShopPaymentService {
-  constructor(private prisma: PrismaService) {}
+  shopTransaction = TransactionFactory.getTransaction(ACCOUNT_TYPE.SHOP);
+  shopNotified = NotifiedFactory.getNotified(ACCOUNT_TYPE.SHOP);
+  constructor(
+    private prisma: PrismaService,
+    private httpService: HttpService,
+    @Inject(forwardRef(() => UserPaymentService))
+    private userPaymentService: UserPaymentService,
+  ) {}
+
+  // async shopTransferNotified(
+  //   shopNotified: TransferNotified,
+  // ): Promise<NotificationResponse> {
+  //   const data = { shopNotified };
+  //   const requestConfig: AxiosRequestConfig = {
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   };
+
+  //   return lastValueFrom(
+  //     this.httpService
+  //       .post<NotificationResponse>(
+  //         NOTIFICATION_SERVICE_URL.transfer,
+  //         data,
+  //         requestConfig,
+  //       )
+  //       .pipe(
+  //         map((response: AxiosResponse) => response.data),
+  //         tap(console.log),
+  //         catchError((e) => e),
+  //       ),
+  //   );
+  // }
+
+  // async shopReceiveNotified(
+  //   shopNotified: ReceiveNotified,
+  // ): Promise<NotificationResponse> {
+  //   const data = { shopNotified };
+  //   const requestConfig: AxiosRequestConfig = {
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   };
+
+  //   return lastValueFrom(
+  //     this.httpService
+  //       .post<NotificationResponse>(
+  //         NOTIFICATION_SERVICE_URL.receive,
+  //         data,
+  //         requestConfig,
+  //       )
+  //       .pipe(
+  //         map((response: AxiosResponse) => response.data),
+  //         tap(console.log),
+  //         catchError((e) => e),
+  //       ),
+  //   );
+  // }
+
+  // async paymentTransaction(
+  //   payload: ShopTransactionBody,
+  // ): Promise<TransactionResponse> {
+  //   const data = { payload };
+
+  //   return lastValueFrom(
+  //     this.httpService
+  //       .post<TransactionResponse>(
+  //         TRANSACTION_SERVICE_URL.shop,
+  //         data,
+  //         REQUEST_CONFIG,
+  //       )
+  //       .pipe(
+  //         map((response: AxiosResponse) => response.data),
+  //         catchError((e) => e),
+  //       ),
+  //   );
+  // }
 
   async createAccount(createShopPaymentDto: CreateShopPaymentDto) {
     let accountNumber: string = GenerateAccountNumber.GetShopAccountNumber();
@@ -61,6 +154,7 @@ export class ShopPaymentService {
         data: {
           accountNumber: accountNumber,
           shopID: createShopPaymentDto.shopID,
+          callbackURL: createShopPaymentDto.callbackURL as string,
         },
       });
 
@@ -233,18 +327,18 @@ export class ShopPaymentService {
     };
   }
 
-  async DBTransactionTransfer(from: string, to: string, amount: number) {
+  async DBTransactionTransfer(transfer: ShopTransfer, date: Date) {
     return await this.prisma.$transaction(async (tx: PrismaClient) => {
       const sender = await tx.shopPayment.update({
         data: {
           balanced: {
-            decrement: amount,
+            decrement: +transfer.amount,
           },
         },
         where: {
           isShopReadyForPayment: {
             isAllowPayment: true,
-            accountNumber: from,
+            accountNumber: transfer.shopAccountNumber,
           },
         },
       });
@@ -259,12 +353,12 @@ export class ShopPaymentService {
       const recipient = await tx.userPayment.update({
         data: {
           balanced: {
-            increment: amount,
+            increment: +transfer.amount,
           },
         },
         where: {
           readyForPayment: {
-            accountNumber: to,
+            accountNumber: transfer.otherAccountNumber,
             isAllowPayment: true,
           },
         },
@@ -274,20 +368,92 @@ export class ShopPaymentService {
         throw new HttpException(NOT_AVAILABLE_TO_RECEIVE, HttpStatus.CONFLICT);
       }
 
-      return sender;
+      const transferTransactionObj: ShopTransactionBody = {
+        shopID: sender.shopID,
+        shopAccountNumber: transfer.shopAccountNumber,
+        userAccountNumber: transfer.otherAccountNumber,
+        nameUser: transfer.nameOther,
+        bankNameUser: transfer.bankNameOther,
+        amount: transfer.amount,
+        balance: sender.balanced,
+        fee: transfer.fee,
+        type: TRANSFER_TYPE.TRANSFER,
+        isFinish: true,
+        date: date.toISOString(),
+      };
+
+      const receivedTransactionObj: UserTransactionBody = {
+        accountID: recipient.accountID,
+        IPAddress: transfer.IPAddress,
+        userAccountNumber: transfer.otherAccountNumber,
+        otherAccountNumber: transfer.shopAccountNumber,
+        nameOther: transfer.shopName,
+        bankNameOther: BANK_NAME.FOUR_QU,
+        amount: transfer.amount,
+        balance: recipient.balanced,
+        fee: transfer.fee,
+        type: TRANSFER_TYPE.RECEIVE,
+        date: date.toISOString(),
+      };
+
+      const transaction = await Promise.all([
+        this.shopTransaction.createTransaction(transferTransactionObj),
+        this.userPaymentService.userTransaction.createTransaction(
+          receivedTransactionObj,
+        ),
+      ]);
+
+      if (!transaction) {
+        throw new HttpException(
+          CREATE_TRANSACTION_FAIL,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      return { sender, transaction, recipient };
     });
   }
 
   async transferToSameBank(transfer: ShopTransfer) {
-    const sender = await this.DBTransactionTransfer(
-      transfer.shopAccountNumber,
+    const date = new Date();
+    const userType = GenerateAccountNumber.CheckIsDestinationType(
       transfer.otherAccountNumber,
-      transfer.amount,
     );
 
-    console.log('====================================');
-    console.log(sender);
-    console.log('====================================');
+    if (userType === ACCOUNT_TYPE.SHOP) {
+      throw new HttpException(TRANSFER_NOT_ACCEPT, HttpStatus.BAD_REQUEST);
+    }
+
+    const transferred = await this.DBTransactionTransfer(transfer, date);
+
+    if (!transferred) {
+      throw new HttpException(
+        TRANSFER_MONEY_FAIL,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const shopNotifiedObj = ShopNotifiedHelper.formatTransferNotified(
+      transferred.sender,
+      transfer,
+      transferred.transaction[0].transactionID,
+      TRANSFER_STATUS.FINISH,
+      new Date().toISOString(),
+      transfer.phone,
+    );
+
+    const userReceive = UserNotified.formatUserReceive(
+      transferred.recipient.balanced,
+      transfer,
+      transferred.sender,
+      new Date().toISOString(),
+      TRANSFER_STATUS.FINISH,
+    );
+
+    await Promise.all([
+      this.shopNotified.transferNotified(shopNotifiedObj),
+      this.userPaymentService.userNotified.receiveNotified(userReceive),
+    ]);
 
     return {
       timestamp: GenerateTimeStamp.getCurrentTime(),

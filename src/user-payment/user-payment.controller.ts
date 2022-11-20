@@ -9,14 +9,25 @@ import {
 } from '@nestjs/common';
 import { UserPaymentService } from './user-payment.service';
 import { CreateUserPaymentDto } from './dto/createUserPayment.dto';
-import { Transfer } from './dto/transfer';
+import { UserTransfer } from './dto/transfer';
 import { GetQRPayload } from './dto/getQRPayload.dto';
 import { SetAmountLimitPerDay } from './dto/setAmountLimit.dto';
+import { DepositDto } from './dto/depositDto.dto';
 // import { HttpExceptionFilter } from './../filter/httpException.filter';
 
 @Controller('user-payment')
 export class UserPaymentController {
   constructor(private readonly userPaymentService: UserPaymentService) {}
+
+  @Get('accounts')
+  getAllAccount() {
+    return this.userPaymentService.getAll();
+  }
+
+  @Post('deposit')
+  deposit(@Body() depositDto: DepositDto) {
+    return this.userPaymentService.deposit(depositDto);
+  }
 
   @Post('create')
   createPayment(@Body() createUserPaymentDto: CreateUserPaymentDto) {
@@ -64,7 +75,7 @@ export class UserPaymentController {
   }
 
   @Post('transfer/same')
-  transferToSameBank(@Body() transfer: Transfer) {
+  transferToSameBank(@Body() transfer: UserTransfer) {
     return this.userPaymentService.transferToSameBank(transfer);
   }
 

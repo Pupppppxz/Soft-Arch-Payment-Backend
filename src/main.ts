@@ -18,11 +18,15 @@ async function bootstrap() {
 
   app.useGlobalPipes(
     new ValidationPipe({
+      whitelist: true,
       transform: true,
     }),
   );
   app.useGlobalFilters(new HttpExceptionFilter());
+  app.enableCors();
 
-  await app.listen(3000);
+  await app.listen(parseInt(process.env.PORT || '3004'), () => {
+    console.log('Server in running on port 3004');
+  });
 }
 bootstrap();

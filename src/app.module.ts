@@ -9,6 +9,10 @@ import { HttpExceptionFilter } from './actions/filter/httpException.filter';
 import { PaymentGatewayController } from './payment-gateway/payment-gateway.controller';
 import { PaymentGatewayService } from './payment-gateway/payment-gateway.service';
 import { PaymentGatewayModule } from './payment-gateway/payment-gateway.module';
+import { ConfigModule } from '@nestjs/config';
+import { HttpModule } from '@nestjs/axios';
+import { UserPaymentController } from './user-payment/user-payment.controller';
+import { ShopPaymentController } from './shop-payment/shop-payment.controller';
 
 @Module({
   imports: [
@@ -16,8 +20,17 @@ import { PaymentGatewayModule } from './payment-gateway/payment-gateway.module';
     UserPaymentModule,
     ShopPaymentModule,
     PaymentGatewayModule,
+    ConfigModule.forRoot({
+      envFilePath: '.env',
+    }),
+    HttpModule,
   ],
-  controllers: [AppController, PaymentGatewayController],
+  controllers: [
+    AppController,
+    PaymentGatewayController,
+    UserPaymentController,
+    ShopPaymentController,
+  ],
   providers: [
     AppService,
     {

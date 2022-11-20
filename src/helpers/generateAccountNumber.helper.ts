@@ -1,3 +1,5 @@
+import { ACCOUNT_TYPE } from 'src/assets/paymentStatic/payment';
+
 export class GenerateAccountNumber {
   static characters = '1234567890';
 
@@ -19,5 +21,14 @@ export class GenerateAccountNumber {
     }
 
     return accNum;
+  }
+
+  static CheckIsDestinationType(accountNumber: string): string {
+    if (accountNumber.charAt(0) === '0') {
+      return ACCOUNT_TYPE.USER;
+    } else if (accountNumber.charAt(0) === '5') {
+      return ACCOUNT_TYPE.SHOP;
+    }
+    return ACCOUNT_TYPE.UNKNOWN;
   }
 }

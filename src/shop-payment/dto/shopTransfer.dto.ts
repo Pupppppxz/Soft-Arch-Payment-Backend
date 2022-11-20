@@ -22,6 +22,14 @@ export class ShopTransfer {
 
   @ApiProperty()
   @IsNotEmpty()
+  shopName: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  phone: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
   @IsNumberString()
   otherAccountNumber: string;
 
@@ -32,7 +40,7 @@ export class ShopTransfer {
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsIn(BANK_NAME)
+  @IsIn(Object.values(BANK_NAME))
   bankNameOther: string;
 
   @ApiProperty()
@@ -50,6 +58,10 @@ export class ShopTransfer {
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsIn(TRANSFER_TYPE)
+  @IsIn(Object.values(TRANSFER_TYPE))
   type: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  IPAddress: string;
 }

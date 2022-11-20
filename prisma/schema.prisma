@@ -34,6 +34,7 @@ model ShopPayment {
   refNumber      String          @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   balanced       Float           @default(0)
   isAllowPayment Boolean         @default(true)
+  callbackURL    String?         @default("")
   created_at     DateTime        @default(now())
   updated_at     DateTime        @updatedAt
   deleted_at     DateTime?
@@ -48,10 +49,12 @@ model QRShopPayment {
   accountNumber String      @db.Char(10)
   expiredTime   DateTime
   amount        Float
-  qrURL         String?
+  qrURL         String
   isPaid        Boolean     @default(false)
   created_at    DateTime    @default(now())
   updated_at    DateTime    @updatedAt
   deleted_at    DateTime?
   ShopPayment   ShopPayment @relation(fields: [accountNumber], references: [accountNumber])
+
+  @@unique(fields: [accountNumber, QRRef], name: "isValidShopQR")
 }

@@ -2,24 +2,26 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsIn,
   IsNotEmpty,
-  IsNumber,
   IsNumberString,
   IsString,
   Length,
-  Max,
-  Min,
   Validate,
 } from 'class-validator';
 import { isValidUserAccountNumber } from 'src/actions/customValidator/userPayment.validator';
-import { BANK_NAME, TRANSFER_TYPE } from 'src/assets/paymentStatic/payment';
+import { BANK_NAME } from 'src/assets/paymentStatic/payment';
 
-export class Transfer {
+export class UserTransfer {
   @ApiProperty()
   @IsNotEmpty()
   @IsNumberString()
   @Length(10, 10)
   @Validate(isValidUserAccountNumber)
   userAccountNumber: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  userAccountName: string;
 
   @ApiProperty()
   @IsNotEmpty()
@@ -34,24 +36,34 @@ export class Transfer {
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsIn(BANK_NAME)
+  @IsIn(Object.values(BANK_NAME))
   bankNameOther: string;
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsNumber()
-  @Min(0)
-  @Max(100000)
+  sourcePhone: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  destPhone: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  IPAddress: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
   amount: number;
 
   @ApiProperty()
   @IsNotEmpty()
-  @Min(0)
-  @Max(5)
   fee: number;
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsIn(TRANSFER_TYPE)
-  type: string;
+  sourceEmail: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  destEmail: string;
 }

@@ -6,4 +6,7 @@ export class CreateShopPaymentDto {
   @IsNotEmpty()
   @IsUUID()
   shopID: string;
+
+  @ApiProperty()
+  callbackURL?: string;
 }

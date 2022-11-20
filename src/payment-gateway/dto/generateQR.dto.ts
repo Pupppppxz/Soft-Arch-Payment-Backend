@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
+  IsNumber,
   IsNumberString,
   IsString,
   Max,
@@ -23,17 +24,9 @@ export class GenerateQRDto {
 
   @ApiProperty()
   @IsNotEmpty()
-  // @IsNumberString()
-  // @Type(() => Number)
-  // @Min(1)
-  // @Max(500000)
   amount: number;
 
   @ApiProperty()
   @IsNotEmpty()
-  // @IsNumberString()
-  // @Type(() => Number)
-  // @Min(5)
-  // @Max(720)
   timeAmount: number;
 }
