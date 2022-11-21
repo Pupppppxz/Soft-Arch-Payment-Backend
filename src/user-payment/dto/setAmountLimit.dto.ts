@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsUUID, Max, Min } from 'class-validator';
+import { IsNotEmpty, IsUUID } from 'class-validator';
 
 export class SetAmountLimitPerDay {
   @ApiProperty()
@@ -8,9 +8,6 @@ export class SetAmountLimitPerDay {
   id: string;
 
   @ApiProperty()
-  @IsNumber()
   @IsNotEmpty()
-  @Min(100000)
-  @Max(1000000)
   amount: number;
 }

@@ -1,6 +1,7 @@
 import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import {
   CREATE_SHOP_FAIL,
+  ERROR_GET_ALL_SHOP,
   GET_BALANCED_FAIL,
   NOT_FOUND_SHOP,
   SHOP_ALREADY_EXIST,
@@ -55,75 +56,6 @@ export class ShopPaymentService {
     private userPaymentService: UserPaymentService,
   ) {}
 
-  // async shopTransferNotified(
-  //   shopNotified: TransferNotified,
-  // ): Promise<NotificationResponse> {
-  //   const data = { shopNotified };
-  //   const requestConfig: AxiosRequestConfig = {
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //   };
-
-  //   return lastValueFrom(
-  //     this.httpService
-  //       .post<NotificationResponse>(
-  //         NOTIFICATION_SERVICE_URL.transfer,
-  //         data,
-  //         requestConfig,
-  //       )
-  //       .pipe(
-  //         map((response: AxiosResponse) => response.data),
-  //         tap(console.log),
-  //         catchError((e) => e),
-  //       ),
-  //   );
-  // }
-
-  // async shopReceiveNotified(
-  //   shopNotified: ReceiveNotified,
-  // ): Promise<NotificationResponse> {
-  //   const data = { shopNotified };
-  //   const requestConfig: AxiosRequestConfig = {
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //   };
-
-  //   return lastValueFrom(
-  //     this.httpService
-  //       .post<NotificationResponse>(
-  //         NOTIFICATION_SERVICE_URL.receive,
-  //         data,
-  //         requestConfig,
-  //       )
-  //       .pipe(
-  //         map((response: AxiosResponse) => response.data),
-  //         tap(console.log),
-  //         catchError((e) => e),
-  //       ),
-  //   );
-  // }
-
-  // async paymentTransaction(
-  //   payload: ShopTransactionBody,
-  // ): Promise<TransactionResponse> {
-  //   const data = { payload };
-
-  //   return lastValueFrom(
-  //     this.httpService
-  //       .post<TransactionResponse>(
-  //         TRANSACTION_SERVICE_URL.shop,
-  //         data,
-  //         REQUEST_CONFIG,
-  //       )
-  //       .pipe(
-  //         map((response: AxiosResponse) => response.data),
-  //         catchError((e) => e),
-  //       ),
-  //   );
-  // }
-
   async createAccount(createShopPaymentDto: CreateShopPaymentDto) {
     let accountNumber: string = GenerateAccountNumber.GetShopAccountNumber();
 
@@ -176,6 +108,31 @@ export class ShopPaymentService {
     };
   }
 
+  async getAllShops() {
+    const allShops = await this.prisma.shopPayment.findMany({
+      where: {
+        deleted_at: null,
+      },
+      select: {
+        shopID: true,
+        accountNumber: true,
+        balanced: true,
+        isAllowPayment: true,
+        amountLimit: true,
+      },
+    });
+
+    if (!allShops) {
+      throw new HttpException(ERROR_GET_ALL_SHOP, HttpStatus.BAD_REQUEST);
+    }
+
+    return {
+      timestamp: new Date().toUTCString(),
+      statusCode: HttpStatus.OK,
+      allShops: allShops,
+    };
+  }
+
   async getInformation(id: string) {
     const shopPayment = await this.prisma.shopPayment.findFirst({
       where: {
@@ -203,6 +160,7 @@ export class ShopPaymentService {
     const balanced = await this.prisma.shopPayment.findFirst({
       where: {
         shopID: id,
+        deleted_at: null,
       },
       select: {
         balanced: true,
@@ -224,6 +182,7 @@ export class ShopPaymentService {
     const amountLimit = await this.prisma.shopPayment.findFirst({
       where: {
         shopID: id,
+        deleted_at: null,
       },
       select: {
         amountLimit: true,
@@ -247,7 +206,7 @@ export class ShopPaymentService {
         shopID: amount.shopID,
       },
       data: {
-        amountLimit: amount.amount,
+        amountLimit: +amount.amount,
       },
     });
 
@@ -307,6 +266,7 @@ export class ShopPaymentService {
     const isAllow = await this.prisma.shopPayment.findFirst({
       where: {
         shopID: id,
+        deleted_at: null,
       },
       select: {
         isAllowPayment: true,
@@ -468,7 +428,7 @@ export class ShopPaymentService {
         shopID: id,
       },
       data: {
-        deleted_at: new Date().toUTCString(),
+        deleted_at: new Date().toISOString(),
       },
     });
     if (!paymentDeleted) {

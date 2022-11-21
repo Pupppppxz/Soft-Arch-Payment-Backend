@@ -26,17 +26,22 @@ export class ShopPaymentController {
     return this.shopPaymentService.getInformation(id);
   }
 
+  @Get('all')
+  getAllShop() {
+    return this.shopPaymentService.getAllShops();
+  }
+
   @Get('balanced/:id')
   getAccountBalanced(@Param('id') id: string) {
     return this.shopPaymentService.getAccountBalanced(id);
   }
 
-  @Get('limit:id')
+  @Get('limit/:id')
   getAccountLimit(@Param('id') id: string) {
     return this.shopPaymentService.getAmountLimitPerDay(id);
   }
 
-  @Patch()
+  @Patch('limit')
   setAccountLimit(@Body() amountLimit: SetShopAmountLimitPerDayDTO) {
     return this.shopPaymentService.setAmountLimitPerDay(amountLimit);
   }
@@ -46,7 +51,7 @@ export class ShopPaymentController {
     return this.shopPaymentService.blockPayment(id);
   }
 
-  @Patch('block/:id')
+  @Patch('unblock/:id')
   unblockPayment(@Param('id') id: string) {
     return this.shopPaymentService.unBlockPayment(id);
   }

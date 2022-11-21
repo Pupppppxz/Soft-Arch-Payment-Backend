@@ -7,8 +7,10 @@ export const REQUEST_CONFIG: AxiosRequestConfig = {
 };
 
 export const NOTIFICATION_SERVICE_URL = {
-  transfer: 'http://localhost:8090/email-notification/payment',
-  receive: 'http://localhost:8090/email-notification/payment-rc',
+  transfer:
+    'https://quplus-noti-service.herokuapp.com/email-notification/payment',
+  receive:
+    'https://quplus-noti-service.herokuapp.com/email-notification/payment-rc',
 };
 
 export const TRANSACTION_SERVICE_URL = {

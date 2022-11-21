@@ -6,5 +6,6 @@ export const UPDATE_AMOUNT_LIMIT_FAIL = 'Error while update amount limit';
 export const PAYMENT_NOT_ALLOW = 'Shop payment not allow';
 export const TRANSFER_MONEY_FAIL = 'Transfer money fail';
 export const TRANSFER_NOT_ACCEPT = 'Transfer not accept';
+export const ERROR_GET_ALL_SHOP = 'Error while get all shops';
 
 export const UPDATE_AMOUNT_LIMIT_FINISH = 'Amount limit updated!';

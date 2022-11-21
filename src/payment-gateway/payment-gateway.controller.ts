@@ -2,7 +2,6 @@ import { Body, Controller, Delete, Get, Post } from '@nestjs/common';
 import { PaymentGatewayService } from './payment-gateway.service';
 import { GenerateQRDto } from './dto/generateQR.dto';
 import { QRDto } from './dto/QR.dto';
-import { RemoveQRDto } from './dto/removeQR.dto';
 
 @Controller('payment-gateway')
 export class PaymentGatewayController {
@@ -12,7 +11,7 @@ export class PaymentGatewayController {
     return this.paymentGatewayService.generateQRPayment(payload);
   }
 
-  @Post('check')
+  @Get('check')
   checkIsUserPaid(@Body() payload: QRDto) {
     return this.paymentGatewayService.checkIsUserPaid(payload);
   }

@@ -33,7 +33,6 @@ import { GetQRPayload } from './dto/getQRPayload.dto';
 import { GenerateTimeStamp } from 'src/helpers/generateTime.helper';
 import {
   ReceiveNotified,
-  TransactionResponse,
   TransferNotified,
   Transferred,
   UserTransactionBody,
@@ -51,6 +50,10 @@ import { DepositDto } from './dto/depositDto.dto';
 import { TRANSFER_MONEY_FAIL } from 'src/assets/httpMessage/shopPayment.label';
 import { TransactionFactory } from 'src/services/transactions/transactionFactory';
 import { NotifiedFactory } from 'src/services/notifieds/notifiedFactory';
+import { QRPayload } from 'src/payment-gateway/entries/QRPayload.entries';
+import { PaymentGatewayHelper } from 'src/helpers/paymentGateway.helper';
+import { EncryptionHelper } from 'src/helpers/encryption.helper';
+import { ERROR_UPDATE_IS_PAID } from 'src/assets/httpMessage/paymentGateway.label';
 
 @Injectable()
 export class UserPaymentService {
@@ -62,84 +65,6 @@ export class UserPaymentService {
     @Inject(forwardRef(() => ShopPaymentService))
     private shopPaymentService: ShopPaymentService,
   ) {}
-
-  // async userTransferNotified(
-  //   userNotified: TransferNotified,
-  // ): Promise<NotificationResponse> {
-  //   const data = { ...userNotified };
-
-  //   return lastValueFrom(
-  //     this.httpService
-  //       .post<NotificationResponse>(
-  //         NOTIFICATION_SERVICE_URL.transfer,
-  //         data,
-  //         REQUEST_CONFIG,
-  //       )
-  //       .pipe(
-  //         map((response: AxiosResponse) => response.data),
-  //         tap(console.log),
-  //         catchError((e) => {
-  //           console.log(e);
-  //           throw new HttpException(
-  //             'Notified exception',
-  //             HttpStatus.BAD_GATEWAY,
-  //           );
-  //         }),
-  //       ),
-  //   );
-  // }
-
-  // async userReceiveNotified(
-  //   userNotified: ReceiveNotified,
-  // ): Promise<NotificationResponse> {
-  //   const data = { ...userNotified };
-
-  //   return lastValueFrom(
-  //     this.httpService
-  //       .post<NotificationResponse>(
-  //         NOTIFICATION_SERVICE_URL.receive,
-  //         data,
-  //         REQUEST_CONFIG,
-  //       )
-  //       .pipe(
-  //         map((response: AxiosResponse) => response.data),
-  //         tap(console.log),
-  //         catchError((e) => {
-  //           console.log(e);
-  //           throw new HttpException(
-  //             'Notified exception',
-  //             HttpStatus.BAD_GATEWAY,
-  //           );
-  //         }),
-  //       ),
-  //   );
-  // }
-
-  // async paymentTransaction(
-  //   payload: UserTransactionBody,
-  // ): Promise<TransactionResponse> {
-  //   const data = { ...payload };
-
-  //   return lastValueFrom(
-  //     this.httpService
-  //       .post<TransactionResponse>(
-  //         TRANSACTION_SERVICE_URL.user,
-  //         data,
-  //         REQUEST_CONFIG,
-  //       )
-  //       .pipe(
-  //         map((response: AxiosResponse) => response.data),
-  //         tap(console.log),
-  //         catchError((e) => {
-  //           console.log(e);
-  //           throw new HttpException(
-  //             'Transaction exception',
-  //             HttpStatus.BAD_GATEWAY,
-  //           );
-  //         }),
-  //       ),
-  //   );
-  // }
 
   async getAll() {
     const allAccounts = await this.prisma.userPayment.findMany({
@@ -269,7 +194,7 @@ export class UserPaymentService {
   }
 
   async getQRPayload(qrPayload: GetQRPayload) {
-    const QRPayload = await this.prisma.userPayment.findUnique({
+    const userPayment = await this.prisma.userPayment.findUnique({
       select: {
         accountNumber: true,
         refNumber: true,
@@ -282,21 +207,30 @@ export class UserPaymentService {
       },
     });
 
-    if (!QRPayload) {
+    if (!userPayment) {
       throw new HttpException(
         ERROR_WHILE_GET_QR_PAYLOAD,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
 
+    const timeExpired = await PaymentGatewayHelper.getExpiredTime(10000);
+
+    const QRPayloadObj = new QRPayload(
+      qrPayload.name,
+      userPayment.accountNumber,
+      0,
+      qrPayload.fee,
+      timeExpired,
+      '',
+    );
+
+    const encrypted = await EncryptionHelper.encryptQRPayload(QRPayloadObj);
+
     return {
       timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
-      QRPayload: {
-        ...QRPayload,
-        ...qrPayload,
-        bankName: BANK_NAME.FOUR_QU,
-      },
+      QRPayload: encrypted,
     };
   }
 
@@ -344,7 +278,7 @@ export class UserPaymentService {
         accountID: amountLimit.id,
       },
       data: {
-        amountLimit: amountLimit.amount,
+        amountLimit: +amountLimit.amount,
       },
     });
     if (!userPayment) {
@@ -489,6 +423,22 @@ export class UserPaymentService {
           },
         })) as ShopPayment;
 
+        const updatedQR = await tx.qRShopPayment.update({
+          where: {
+            QRRef: transfer.ref,
+          },
+          data: {
+            isPaid: true,
+          },
+        });
+
+        if (!updatedQR) {
+          throw new HttpException(
+            ERROR_UPDATE_IS_PAID,
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+
         transferred.id = recipient.shopID;
         transferred.balance = recipient.balanced;
       }
@@ -609,7 +559,7 @@ export class UserPaymentService {
         accountID: id,
       },
       data: {
-        deleted_at: new Date().toUTCString(),
+        deleted_at: new Date().toISOString(),
       },
     });
     if (!paymentDeleted) {

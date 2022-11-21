@@ -5,7 +5,7 @@ import {
   ReceiveNotified,
 } from 'src/types';
 import { Notified } from './notified';
-import { catchError, lastValueFrom, map, tap } from 'rxjs';
+import { catchError, lastValueFrom, map } from 'rxjs';
 import { NOTIFICATION_SERVICE_URL, REQUEST_CONFIG } from 'src/httpConfig';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { AxiosResponse } from 'axios';
@@ -31,7 +31,7 @@ export class UserNotified extends Notified {
           )
           .pipe(
             map((response: AxiosResponse) => response.data),
-            catchError((e) => {
+            catchError(() => {
               throw new HttpException(
                 'Notified exception',
                 HttpStatus.BAD_GATEWAY,
@@ -62,7 +62,7 @@ export class UserNotified extends Notified {
           )
           .pipe(
             map((response: AxiosResponse) => response.data),
-            catchError((e) => {
+            catchError(() => {
               throw new HttpException(
                 'Notified exception',
                 HttpStatus.BAD_GATEWAY,

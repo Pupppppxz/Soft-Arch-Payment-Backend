@@ -73,3 +73,8 @@ export interface Transferred {
 export interface CallbackResponse {
   status?: number;
 }
+
+export interface JwtPayload {
+  shopID: string;
+  accountNumber: string;
+}

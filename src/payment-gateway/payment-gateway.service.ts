@@ -8,6 +8,7 @@ import {
   FINISHED_UPDATE_QR_STATUS,
   FINISHED_DELETED_QR,
   NOT_FOUND_QR_IMAGE,
+  ERROR_CALLBACK,
 } from 'src/assets/httpMessage/paymentGateway.label';
 import { FEE } from 'src/assets/paymentStatic/payment';
 import { EncryptionHelper } from 'src/helpers/encryption.helper';
@@ -18,11 +19,13 @@ import { GenerateQRDto } from './dto/generateQR.dto';
 import { QRPayload } from './entries/QRPayload.entries';
 import { HttpService } from '@nestjs/axios/dist';
 import { catchError, lastValueFrom, map, tap } from 'rxjs';
-import { AxiosRequestConfig, AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { GenerateQRResponse, RemoveQRResponse } from './types';
 import { QRDto } from './dto/QR.dto';
 import { PAYMENT_NOT_ALLOW } from 'src/assets/httpMessage/shopPayment.label';
 import { CallbackResponse } from 'src/types';
+import { REQUEST_CONFIG } from 'src/httpConfig';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PaymentGatewayService {
@@ -35,15 +38,10 @@ export class PaymentGatewayService {
 
   async getQRUrl(payload: string): Promise<GenerateQRResponse> {
     const data = { payload };
-    const requestConfig: AxiosRequestConfig = {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    };
 
     return lastValueFrom(
       this.httpService
-        .post<GenerateQRResponse>(this.QR_SERVICE_URL, data, requestConfig)
+        .post<GenerateQRResponse>(this.QR_SERVICE_URL, data, REQUEST_CONFIG)
         .pipe(
           map((response: AxiosResponse) => response.data),
           tap((resp) => console.log(resp.data)),
@@ -76,17 +74,66 @@ export class PaymentGatewayService {
         map((response: AxiosResponse) => response.status),
         tap(console.log),
         catchError(() => {
-          throw new HttpException('', HttpStatus.BAD_REQUEST);
+          throw new HttpException(ERROR_CALLBACK, HttpStatus.BAD_REQUEST);
         }),
       ),
     );
   }
 
-  async generateQRPayment(qrBody: GenerateQRDto) {
-    const timeExpired = await PaymentGatewayHelper.getExpiredTime(
-      qrBody.timeAmount,
-    );
+  async qrTransaction(qrBody: GenerateQRDto) {
+    return await this.prisma.$transaction(async (tx: PrismaClient) => {
+      const timeExpired = await PaymentGatewayHelper.getExpiredTime(
+        qrBody.timeAmount,
+      );
 
+      const qrObject = await tx.qRShopPayment.create({
+        data: {
+          accountNumber: qrBody.accountNumber,
+          expiredTime: new Date(timeExpired),
+          amount: +qrBody.amount,
+          qrURL: '',
+        },
+      });
+
+      if (!qrObject) {
+        throw new HttpException(CREATE_QR_FAIL, HttpStatus.BAD_REQUEST);
+      }
+
+      const qrPayload = new QRPayload(
+        qrBody.accountName,
+        qrBody.accountNumber,
+        qrBody.amount,
+        FEE,
+        timeExpired,
+        qrObject.QRRef,
+      );
+
+      const encrypted = await EncryptionHelper.encryptQRPayload(qrPayload);
+
+      const response = await this.getQRUrl(encrypted);
+
+      if (response.data === '' || !response.data) {
+        throw new HttpException(CREATE_QR_FAIL, HttpStatus.BAD_REQUEST);
+      }
+
+      const updated = await tx.qRShopPayment.update({
+        data: {
+          qrURL: response.data,
+        },
+        where: {
+          QRRef: qrObject.QRRef,
+        },
+      });
+
+      if (!updated) {
+        throw new HttpException(CREATE_QR_FAIL, HttpStatus.BAD_REQUEST);
+      }
+
+      return { ...updated };
+    });
+  }
+
+  async generateQRPayment(qrBody: GenerateQRDto) {
     const shopPayment = await this.prisma.shopPayment.findFirst({
       where: {
         accountNumber: qrBody.accountNumber,
@@ -100,34 +147,7 @@ export class PaymentGatewayService {
       throw new HttpException(PAYMENT_NOT_ALLOW, HttpStatus.BAD_REQUEST);
     }
 
-    const qrPayload = new QRPayload(
-      qrBody.accountName,
-      qrBody.accountNumber,
-      qrBody.amount,
-      FEE,
-      timeExpired,
-    );
-
-    const encrypted = await EncryptionHelper.encryptQRPayload(qrPayload);
-
-    const response = await this.getQRUrl(encrypted);
-
-    if (response.data === '' || !response.data) {
-      throw new HttpException(CREATE_QR_FAIL, HttpStatus.BAD_REQUEST);
-    }
-
-    const qrObject = await this.prisma.qRShopPayment.create({
-      data: {
-        accountNumber: qrBody.accountNumber,
-        expiredTime: new Date(timeExpired),
-        amount: +qrBody.amount,
-        qrURL: response?.data,
-      },
-    });
-
-    if (!qrObject) {
-      throw new HttpException(CREATE_QR_FAIL, HttpStatus.BAD_REQUEST);
-    }
+    const qrObject = await this.qrTransaction(qrBody);
 
     return {
       timestamp: GenerateTimeStamp.getCurrentTime(),

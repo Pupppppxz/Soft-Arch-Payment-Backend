@@ -6,6 +6,7 @@ export class QRPayload {
   fee: number;
   type = 'QR_PAYMENT';
   timeExpired: string;
+  ref: string;
 
   constructor(
     accountName: string,
@@ -13,12 +14,14 @@ export class QRPayload {
     amount: number,
     fee: number,
     timeExpired: string,
+    ref: string,
   ) {
     this.accountName = accountName;
     this.accountNumber = accountNumber;
     this.amount = Number(amount);
     this.fee = fee;
     this.timeExpired = timeExpired;
+    this.ref = ref;
   }
 
   getQRPayload() {
@@ -26,6 +29,7 @@ export class QRPayload {
       bankName: this.bankName,
       accountName: this.accountName,
       accountNumber: this.accountNumber,
+      ref: this.ref,
       amount: this.amount,
       fee: this.fee,
       type: this.type,
@@ -38,6 +42,7 @@ export class QRPayload {
       bankName: this.bankName,
       accountName: this.accountName,
       accountNumber: this.accountNumber,
+      ref: this.ref,
       amount: this.amount,
       fee: this.fee,
       type: this.type,

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsUUID, Max, Min } from 'class-validator';
+import { IsNotEmpty, IsUUID } from 'class-validator';
 
 export class SetShopAmountLimitPerDayDTO {
   @ApiProperty()
@@ -8,8 +8,6 @@ export class SetShopAmountLimitPerDayDTO {
   shopID: string;
 
   @ApiProperty()
-  @IsNumber()
-  @Min(100000)
-  @Max(1000000)
+  @IsNotEmpty()
   amount: number;
 }

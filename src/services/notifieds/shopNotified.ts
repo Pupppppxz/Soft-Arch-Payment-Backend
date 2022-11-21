@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { AxiosResponse } from 'axios';
-import { catchError, lastValueFrom, map, tap } from 'rxjs';
+import { catchError, lastValueFrom, map } from 'rxjs';
 import { ACCOUNT_TYPE } from 'src/assets/paymentStatic/payment';
 import { NOTIFICATION_SERVICE_URL, REQUEST_CONFIG } from 'src/httpConfig';
 import {
@@ -31,8 +31,7 @@ export class ShopNotified extends Notified {
           )
           .pipe(
             map((response: AxiosResponse) => response.data),
-            catchError((e) => {
-              console.log(e);
+            catchError(() => {
               throw new HttpException(
                 'Notified exception',
                 HttpStatus.BAD_GATEWAY,
@@ -62,8 +61,7 @@ export class ShopNotified extends Notified {
           )
           .pipe(
             map((response: AxiosResponse) => response.data),
-            catchError((e) => {
-              console.log(e);
+            catchError(() => {
               throw new HttpException(
                 'Notified exception',
                 HttpStatus.BAD_GATEWAY,

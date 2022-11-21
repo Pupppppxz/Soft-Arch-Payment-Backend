@@ -53,6 +53,10 @@ export class UserTransfer {
 
   @ApiProperty()
   @IsNotEmpty()
+  ref: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
   amount: number;
 
   @ApiProperty()
