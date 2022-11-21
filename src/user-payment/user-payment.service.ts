@@ -432,7 +432,7 @@ export class UserPaymentService {
           },
         });
 
-        if (!updatedQR) {
+        if (!updatedQR && transfer.ref !== '') {
           throw new HttpException(
             ERROR_UPDATE_IS_PAID,
             HttpStatus.INTERNAL_SERVER_ERROR,
