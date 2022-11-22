@@ -1,24 +1,15 @@
-FROM node:16-alpine As development
+FROM node:16
 
 WORKDIR /usr/src/app
 
 COPY package*.json ./
 COPY prisma ./prisma/
-RUN yarn add glob rimraf
-RUN yarn — only=development
+
+RUN npm install
 
 COPY . .
-RUN yarn build
-FROM node:16-alpine as production
 
-ARG NODE_ENV=production
-ENV NODE_ENV=${NODE_ENV}
+RUN npm run start:migrate:prod
+RUN npm run build
 
-WORKDIR /usr/src/app
-COPY package*.json ./
-COPY prisma ./prisma/
-RUN yarn add glob rimraf
-RUN yarn — only=production
-COPY . .
-COPY - from=development /usr/src/app/dist ./dist
-CMD [“node”, “dist/main”]
+CMD [ "node", "run", "start:prod" ]

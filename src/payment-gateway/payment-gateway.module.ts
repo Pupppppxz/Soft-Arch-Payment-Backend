@@ -16,5 +16,6 @@ import { PaymentGatewayService } from './payment-gateway.service';
       }),
     }),
   ],
+  exports: [PaymentGatewayService],
 })
 export class PaymentGatewayModule {}

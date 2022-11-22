@@ -37,7 +37,6 @@ import {
   Transferred,
   UserTransactionBody,
 } from 'src/types';
-import { HttpService } from '@nestjs/axios';
 import { forwardRef } from '@nestjs/common/utils';
 import { ShopPaymentService } from 'src/shop-payment/shop-payment.service';
 import {
@@ -54,6 +53,7 @@ import { QRPayload } from 'src/payment-gateway/entries/QRPayload.entries';
 import { PaymentGatewayHelper } from 'src/helpers/paymentGateway.helper';
 import { EncryptionHelper } from 'src/helpers/encryption.helper';
 import { ERROR_UPDATE_IS_PAID } from 'src/assets/httpMessage/paymentGateway.label';
+import { PaymentGatewayService } from 'src/payment-gateway/payment-gateway.service';
 
 @Injectable()
 export class UserPaymentService {
@@ -61,9 +61,10 @@ export class UserPaymentService {
   userNotified = NotifiedFactory.getNotified(ACCOUNT_TYPE.USER);
   constructor(
     private prisma: PrismaService,
-    private httpService: HttpService,
     @Inject(forwardRef(() => ShopPaymentService))
     private shopPaymentService: ShopPaymentService,
+    @Inject(forwardRef(() => PaymentGatewayService))
+    private paymentGatewayService: PaymentGatewayService,
   ) {}
 
   async getAll() {
@@ -359,7 +360,7 @@ export class UserPaymentService {
     };
   }
 
-  async DBTransactionTransferToUser(transfer: UserTransfer, date: Date) {
+  async DBTransactionTransfer(transfer: UserTransfer, date: Date) {
     return await this.prisma.$transaction(async (tx: PrismaClient) => {
       const userType = GenerateAccountNumber.CheckIsDestinationType(
         transfer.otherAccountNumber,
@@ -423,20 +424,34 @@ export class UserPaymentService {
           },
         })) as ShopPayment;
 
-        const updatedQR = await tx.qRShopPayment.update({
-          where: {
-            QRRef: transfer.ref,
-          },
-          data: {
-            isPaid: true,
-          },
-        });
+        try {
+          if (transfer.ref !== '') {
+            const updatedQR = await tx.qRShopPayment.update({
+              where: {
+                QRRef: transfer.ref,
+              },
+              data: {
+                isPaid: true,
+              },
+            });
 
-        if (!updatedQR && transfer.ref !== '') {
-          throw new HttpException(
-            ERROR_UPDATE_IS_PAID,
-            HttpStatus.INTERNAL_SERVER_ERROR,
-          );
+            if (!updatedQR) {
+              throw new HttpException(
+                ERROR_UPDATE_IS_PAID,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+              );
+            }
+
+            // execute payment gateway
+            await this.paymentGatewayService.executeCallbackURL(
+              (recipient?.callbackURL as string) +
+                recipient?.callbackURL?.endsWith('/')
+                ? (updatedQR?.QRRef as string)
+                : '/' + (updatedQR?.QRRef as string),
+            );
+          }
+        } catch (err) {
+          console.log(err);
         }
 
         transferred.id = recipient.shopID;
@@ -498,7 +513,7 @@ export class UserPaymentService {
   async transferToSameBank(transfer: UserTransfer) {
     const date = new Date();
 
-    const transferred = await this.DBTransactionTransferToUser(transfer, date);
+    const transferred = await this.DBTransactionTransfer(transfer, date);
 
     if (!transferred) {
       throw new HttpException(

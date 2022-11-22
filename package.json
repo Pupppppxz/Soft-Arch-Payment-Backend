@@ -20,7 +20,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:migrate": "prisma migrate dev init",
-    "prisma:migrate:name": "prisma migrate dev --name init"
+    "prisma:migrate:name": "prisma migrate dev --name init",
+    "prisma:generate": "prisma generate --schema ./prisma/schema.prisma",
+    "start:migrate:prod": "prisma migrate deploy"
   },
   "dependencies": {
     "@nestjs/axios": "^1.0.0",
