@@ -24,13 +24,11 @@ import { GenerateQRResponse, RemoveQRResponse } from './types';
 import { QRDto } from './dto/QR.dto';
 import { PAYMENT_NOT_ALLOW } from 'src/assets/httpMessage/shopPayment.label';
 import { CallbackResponse } from 'src/types';
-import { REQUEST_CONFIG } from 'src/httpConfig';
+import { QR_ORIGIN, QR_SERVICE_URL, REQUEST_CONFIG } from 'src/httpConfig';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PaymentGatewayService {
-  private QR_SERVICE_URL = 'http://localhost:3333/api/qr';
-
   constructor(
     private prisma: PrismaService,
     private httpService: HttpService,
@@ -41,7 +39,7 @@ export class PaymentGatewayService {
 
     return lastValueFrom(
       this.httpService
-        .post<GenerateQRResponse>(this.QR_SERVICE_URL, data, REQUEST_CONFIG)
+        .post<GenerateQRResponse>(QR_SERVICE_URL, data, REQUEST_CONFIG)
         .pipe(
           map((response: AxiosResponse) => response.data),
           tap((resp) => console.log(resp.data)),
@@ -57,7 +55,7 @@ export class PaymentGatewayService {
 
     return lastValueFrom(
       this.httpService
-        .delete<GenerateQRResponse>(this.QR_SERVICE_URL, { data })
+        .delete<GenerateQRResponse>(QR_SERVICE_URL, { data })
         .pipe(
           map((response: AxiosResponse) => response.data),
           tap((resp) => console.log(resp.data)),
@@ -152,7 +150,7 @@ export class PaymentGatewayService {
     return {
       timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
-      encrypt: PaymentGatewayHelper.reformatResponseQR(qrObject),
+      QR: PaymentGatewayHelper.reformatResponseQR(qrObject),
     };
   }
 
@@ -197,7 +195,7 @@ export class PaymentGatewayService {
     return {
       timestamp: GenerateTimeStamp.getCurrentTime(),
       statusCode: HttpStatus.OK,
-      QR: qrObj,
+      QR: QR_ORIGIN + qrObj,
     };
   }
 

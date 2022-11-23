@@ -513,7 +513,11 @@ export class UserPaymentService {
   async transferToSameBank(transfer: UserTransfer) {
     const date = new Date();
 
+    console.log(transfer);
+
     const transferred = await this.DBTransactionTransfer(transfer, date);
+
+    console.log(transferred);
 
     if (!transferred) {
       throw new HttpException(

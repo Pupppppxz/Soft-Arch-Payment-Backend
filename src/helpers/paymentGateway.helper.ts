@@ -1,9 +1,8 @@
 import { QRShopPayment } from '@prisma/client';
+import { QR_ORIGIN } from 'src/httpConfig';
 import { GenerateTimeStamp } from './generateTime.helper';
 
 export class PaymentGatewayHelper {
-  static QR_ORIGIN = 'http://localhost:3333/';
-
   static async getExpiredTime(timeAmount: number) {
     const expiredTime = new Date();
     const minute = expiredTime.getMinutes() + (timeAmount % 60);
@@ -22,7 +21,7 @@ export class PaymentGatewayHelper {
       QRRef: responseObj.QRRef,
       expiredTime: responseObj.expiredTime,
       amount: responseObj.amount,
-      qrURL: this.QR_ORIGIN + responseObj.qrURL,
+      qrURL: QR_ORIGIN + responseObj.qrURL,
       isPaid: responseObj.isPaid,
     };
   }
